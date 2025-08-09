@@ -142,6 +142,7 @@ You will be prompted to enter:
 ## 👨‍💻 Author
 
 **Balakavi**
+
 Developing Cybersecurity Researcher | Budding Ethical Hacker | AI Enthusiast
 
 ---
