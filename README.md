@@ -141,8 +141,9 @@ You will be prompted to enter:
 
 ## 👨‍💻 Author
 
-**Kavi's Network (Mr-Balakavi)**
+**Balakavi**
 Developing Cybersecurity Researcher | Budding Ethical Hacker | AI Enthusiast
+
 ---
 
 ## 📜 License
