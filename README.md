@@ -16,7 +16,7 @@ Zero-day vulnerabilities are a major threat in cybersecurity. These are unknown 
 
 * Extract and preprocess structured CVE data from NVD JSON feeds
 * Train a machine learning model to classify vulnerabilities
-* Predict if a CVE is critical/high using only the textual description
+* Predict if a CVE is critical/high using both textual and structured features
 * Save and reuse trained models for future batch predictions
 
 ---
@@ -37,7 +37,9 @@ Zero-day vulnerabilities are a major threat in cybersecurity. These are unknown 
   * `description`
   * `severity`
   * `impact_score`
-  * `attack_vector`, `attack_complexity`, etc.
+  * `attack_vector`
+  * `attack_complexity`
+  * `privileges_required`
 
 ---
 
@@ -58,17 +60,18 @@ Zero-day vulnerabilities are a major threat in cybersecurity. These are unknown 
 
 * Handle missing values
 * Normalize text fields
+* Encode categorical features like `attack_vector`, `attack_complexity`, `privileges_required`
 * Create binary label: `1` if severity is `high` or `critical`, else `0`
 
 ### Step 2: Feature Extraction
 
 * TF-IDF vectorization on `details` or `description` field
+* Combine TF-IDF vectors with structured numerical/categorical features
 
 ### Step 3: Model Training
 
 * Algorithm: `RandomForestClassifier`
-* Accuracy: \~83%
-* Balanced precision/recall for both classes
+* Accuracy: \~83% (with text only) and potentially higher with structured features
 
 ### Step 4: Save Trained Artifacts
 
@@ -102,20 +105,28 @@ python parse_nvd_json.py
 python train_model.py
 ```
 
-### 4. Predict new CVEs:
+### 4. Predict new CVEs with user input:
 
 ```bash
-python predict_nvd_batch.py
+python predict.py
 ```
+
+You will be prompted to enter:
+
+* CVE description
+* Impact score
+* Attack vector
+* Attack complexity
+* Privileges required
 
 ---
 
 ## 📊 Sample Prediction Output
 
-| CVE\_ID       | description | severity | predicted\_label |
-| ------------- | ----------- | -------- | ---------------- |
-| CVE-2024-XXXX | ...         | HIGH     | CRITICAL         |
-| CVE-2024-YYYY | ...         | LOW      | Not Critical     |
+| CVE\_ID       | description | severity | impact\_score | attack\_vector | attack\_complexity | privileges\_required | predicted\_label |
+| ------------- | ----------- | -------- | ------------- | -------------- | ------------------ | -------------------- | ---------------- |
+| CVE-2024-XXXX | ...         | HIGH     | 8.0           | NETWORK        | LOW                | NONE                 | CRITICAL         |
+| CVE-2024-YYYY | ...         | LOW      | 3.1           | LOCAL          | HIGH               | LOW                  | Not Critical     |
 
 ---
 
@@ -130,9 +141,8 @@ python predict_nvd_batch.py
 
 ## 👨‍💻 Author
 
-**Kavi's Network**
-Cybersecurity Researcher, Ethical Hacker, ML Enthusiast
-
+**Kavi's Network (Mr-Balakavi)**
+Developing Cybersecurity Researcher | Budding Ethical Hacker | AI Enthusiast
 ---
 
 ## 📜 License
