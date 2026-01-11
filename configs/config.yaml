@@ -1,0 +1,244 @@
+version: "2.0"
+project:
+  name: "Zero-Day Vulnerability Prediction System"
+  description: "ML-driven framework for predicting zero-day vulnerabilities using code, graph, and CVE intelligence"
+  owner: "security-research"
+  environment: "production"   # dev | staging | production
+  reproducibility:
+    seed: 42
+    deterministic: true
+
+# =====================================================
+# DATA MANAGEMENT
+# =====================================================
+data:
+  directories:
+    raw: "data/raw"
+    processed: "data/processed"
+    features: "data/features"
+    models: "data/models"
+    cache: "data/cache"
+    reports: "data/reports"
+
+  formats:
+    source_code: ["c", "cpp", "py", "js", "java"]
+    metadata: ["json", "csv", "parquet"]
+
+  max_file_size_mb: 20
+  deduplication: true
+  normalization: true
+  encoding: "utf-8"
+
+# =====================================================
+# LANGUAGE & PARSER CONFIG
+# =====================================================
+languages:
+  c:
+    parser: "tree-sitter-c"
+    supports_ast: true
+    supports_cfg: true
+  cpp:
+    parser: "tree-sitter-cpp"
+    supports_ast: true
+    supports_cfg: true
+  python:
+    parser: "lib2to3"
+    supports_ast: true
+    supports_dfg: true
+  javascript:
+    parser: "esprima"
+    supports_ast: true
+  java:
+    parser: "javaparser"
+    supports_ast: true
+    supports_cfg: true
+
+# =====================================================
+# CVE / THREAT INTELLIGENCE
+# =====================================================
+threat_intelligence:
+  nvd:
+    api_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+    api_key_env: "NVD_API_KEY"
+    rate_limit_delay_sec: 6
+    results_per_page: 2000
+    retry:
+      max_attempts: 5
+      backoff_factor: 2
+
+  exploit_sources:
+    - exploit-db
+    - metasploit
+    - github-advisories
+
+  freshness_window_days: 365
+  severity_filter: ["HIGH", "CRITICAL"]
+
+# =====================================================
+# FEATURE ENGINEERING
+# =====================================================
+features:
+  static_analysis:
+    complexity:
+      cyclomatic_max: 50
+      cognitive_max: 40
+      max_function_length: 500
+      max_nesting_depth: 10
+
+    memory_risk:
+      detect_use_after_free: true
+      detect_double_free: true
+      detect_buffer_overflow: true
+
+    dangerous_functions:
+      c: [strcpy, strcat, sprintf, gets, scanf, memcpy, memmove, malloc, realloc, free]
+      python: [eval, exec, compile, __import__, pickle.loads, subprocess.call, os.system]
+      javascript: [eval, Function, innerHTML, document.write, setTimeout, setInterval]
+
+  graph_features:
+    ast: true
+    cfg: true
+    dfg: true
+    call_graph: true
+
+  semantic_features:
+    embeddings:
+      model: "microsoft/codebert-base"
+      max_length: 512
+      pooling: "mean"
+
+  supply_chain_risk:
+    dependency_scanning: true
+    vulnerable_packages: true
+    license_risk: true
+
+# =====================================================
+# MODEL ARCHITECTURES
+# =====================================================
+models:
+  baseline_random_forest:
+    type: "sklearn"
+    enabled: true
+    params:
+      n_estimators: 300
+      max_depth: 25
+      min_samples_split: 5
+      min_samples_leaf: 2
+      class_weight: "balanced"
+
+  codebert_classifier:
+    type: "transformer"
+    enabled: true
+    pretrained_model: "microsoft/codebert-base"
+    training:
+      batch_size: 16
+      learning_rate: 2.0e-5
+      epochs: 12
+      warmup_ratio: 0.1
+      weight_decay: 0.01
+      gradient_accumulation: 2
+
+  gnn_model:
+    type: "graph_neural_network"
+    enabled: true
+    architecture: "GAT"
+    hidden_dim: 256
+    layers: 4
+    dropout: 0.3
+    learning_rate: 1.0e-3
+    epochs: 120
+
+  ensemble:
+    enabled: true
+    strategy: "weighted_voting"
+    weights:
+      baseline_random_forest: 0.2
+      codebert_classifier: 0.4
+      gnn_model: 0.4
+
+# =====================================================
+# TRAINING PIPELINE
+# =====================================================
+training:
+  split:
+    test_size: 0.2
+    validation_size: 0.1
+    stratified: true
+
+  imbalance_handling:
+    strategy: "smote"   # smote | undersample | focal_loss
+    smote_k_neighbors: 5
+
+  cross_validation:
+    enabled: true
+    folds: 5
+
+  early_stopping:
+    enabled: true
+    patience: 7
+    monitor: "val_f1"
+
+# =====================================================
+# EVALUATION & EXPLAINABILITY
+# =====================================================
+evaluation:
+  primary_metric: "f1"
+  threshold: 0.5
+  metrics:
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - pr_auc
+
+  explainability:
+    shap: true
+    lime: true
+    attention_visualization: true
+
+# =====================================================
+# INFERENCE & DEPLOYMENT
+# =====================================================
+inference:
+  batch_size: 32
+  confidence_threshold: 0.75
+  reject_low_confidence: true
+
+deployment:
+  mode: "api"        # api | batch | cli
+  framework: "fastapi"
+  authentication: "api_key"
+  rate_limit:
+    requests_per_minute: 60
+
+# =====================================================
+# MONITORING & LOGGING
+# =====================================================
+monitoring:
+  drift_detection: true
+  data_quality_checks: true
+  alerting:
+    enabled: true
+    severity_threshold: "HIGH"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/zeroday.log"
+
+# =====================================================
+# EXPERIMENT TRACKING
+# =====================================================
+experiments:
+  tracking_tool: "mlflow"
+  log_models: true
+  log_metrics: true
+  artifact_location: "experiments/artifacts"
+
+# =====================================================
+# SECURITY & COMPLIANCE
+# =====================================================
+security:
+  secrets_management: "env"
+  pii_detection: false
+  audit_logging: true
